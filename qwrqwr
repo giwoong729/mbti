@@ -1,0 +1,179 @@
+import streamlit as st
+
+# ==========================================
+# 1. 페이지 기본 설정 및 CSS 디자인 (크림/노란색 톤)
+# ==========================================
+st.set_page_config(
+    page_title="MBTI 단짝 포켓몬 찾기 🔍",
+    page_icon="✨",
+    layout="centered"
+)
+
+# 커스텀 CSS (배경색, 폰트 크기, 버튼 디자인 등)
+st.markdown("""
+    <style>
+    /* 전체 배경 및 텍스트 색상 */
+    .stApp {
+        background-color: #FFFBF0;
+    }
+    h1, h2, h3, p, span, div, li {
+        color: #4A3F35 !important;
+        font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;
+    }
+    
+    /* 제목 스타일 */
+    .main-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #D48806 !important;
+        text-align: center;
+        margin-bottom: 0px;
+    }
+    .sub-title {
+        font-size: 1.2rem;
+        color: #6C5B4E !important;
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    /* 포켓몬 결과 텍스트 스타일 */
+    .poke-name {
+        font-size: 2.2rem;
+        font-weight: bold;
+        color: #D48806 !important;
+        text-align: center;
+        margin-top: 15px;
+        margin-bottom: 5px;
+    }
+    .poke-info {
+        font-size: 1.3rem;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .reason-box {
+        background-color: #FFF5D1;
+        padding: 20px 25px;
+        border-radius: 15px;
+        font-size: 1.2rem;
+        line-height: 1.6;
+        word-break: keep-all;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+    }
+
+    /* 스트림릿 기본 버튼(MBTI 선택 버튼) 덮어쓰기 */
+    div.stButton > button:first-child {
+        background-color: #FFDE82;
+        color: #4A3F35 !important;
+        border: none;
+        border-radius: 12px;
+        padding: 20px 0;
+        font-size: 1.3rem !important;
+        font-weight: bold;
+        width: 100%;
+        transition: all 0.2s ease-in-out;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #FFC107;
+        color: #2D251F !important;
+        transform: scale(1.05);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+# ==========================================
+# 2. 16가지 MBTI 포켓몬 데이터 세팅
+# ==========================================
+# 이미지는 PokeAPI의 공식 고화질 일러스트 URL을 사용합니다.
+pokemon_data = {
+    "ISTJ": {"name": "꼬부기 (Squirtle)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png", "type": "💧 물", "trait": "우직하고 성실함", "reason": "규칙을 잘 지키고 묵묵히 제 할 일을 다하는 성격이 당신과 찰떡입니다.<br>언제나 변함없는 모습으로 당신의 든든한 파트너가 되어줄 거예요."},
+    "ISFJ": {"name": "해피너스 (Blissey)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/242.png", "type": "🥚 노말", "trait": "다정하고 헌신적임", "reason": "다른 사람을 챙기고 돌보는 것을 좋아하는 따뜻한 마음씨를 가졌습니다.<br>지치고 힘들 때 곁에서 가장 큰 위로와 회복을 안겨줄 단짝입니다."},
+    "INFJ": {"name": "나인테일 (Ninetales)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/38.png", "type": "🔥 불꽃", "trait": "신비롭고 통찰력 있음", "reason": "생각이 깊고 직관력이 뛰어나며 묘한 신비로움을 풍깁니다.<br>말하지 않아도 당신의 깊은 내면과 진심을 꿰뚫어 보고 이해해 줄 것입니다."},
+    "INTJ": {"name": "야부엉 (Noctowl)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/164.png", "type": "🦉 노말 / 비행", "trait": "지능적이고 분석적임", "reason": "어두운 곳에서도 꿰뚫어 보는 눈으로 상황을 냉철하게 분석합니다.<br>당신과 함께라면 어떤 복잡한 문제라도 전략적으로 해결할 수 있는 최고의 콤비입니다."},
+    "ISTP": {"name": "나무지기 (Treecko)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/252.png", "type": "🌿 풀", "trait": "시크하고 독립적임", "reason": "개인 시간을 중요시하며 어떤 위기 앞에서도 쿨하고 침착합니다.<br>서로의 영역을 존중하면서도 필요할 땐 확실한 능력을 보여주는 멋진 친구입니다."},
+    "ISFP": {"name": "뚜벅쵸 (Oddish)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/43.png", "type": "🌸 풀 / 독", "trait": "평화주의자, 자연 친화적", "reason": "갈등을 싫어하고 소소한 일상과 자연 속에서 평화를 찾습니다.<br>다투는 일 없이 곁에서 조용히 당신의 마음에 안정감을 심어줄 것입니다."},
+    "INFP": {"name": "토게피 (Togepi)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/175.png", "type": "✨ 페어리", "trait": "순수하고 낭만적임", "reason": "세상을 아름답고 낭만적으로 바라보는 순수한 영혼의 소유자입니다.<br>당신의 풍부한 상상력에 공감하며 긍정적인 에너지를 듬뿍 나누어 줄 거예요."},
+    "INTP": {"name": "잠만보 (Snorlax)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png", "type": "💤 노말", "trait": "느긋하고 사색적임", "reason": "혼자만의 시간을 사랑하고 눕는 것을 세상에서 제일 좋아합니다.<br>겉으로는 게을러 보여도 머릿속엔 늘 기발한 생각이 가득한 점이 당신과 꼭 닮았습니다."},
+    "ESTP": {"name": "피카츄 (Pikachu)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png", "type": "⚡ 전기", "trait": "에너제틱, 뛰어난 적응력", "reason": "호기심이 넘치고 어디서나 주목받는 스릴 만점 행동파입니다.<br>당신과 함께라면 매일매일이 지루할 틈 없는 짜릿한 모험이 될 것입니다."},
+    "ESFP": {"name": "에이팜 (Aipom)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/190.png", "type": "🐒 노말", "trait": "장난기 가득, 분위기 메이커", "reason": "사람들과 어울려 놀 때 가장 큰 행복을 느끼는 슈퍼 인싸입니다.<br>특유의 밝고 긍정적인 에너지로 주변을 항상 웃음바다로 만들어줍니다."},
+    "ENFP": {"name": "이브이 (Eevee)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png", "type": "🌟 노말", "trait": "무한한 가능성, 호기심", "reason": "자유로운 영혼을 가졌으며 어떤 모습으로든 진화할 수 있는 잠재력이 있습니다.<br>새로운 도전을 두려워하지 않는 당신과 함께 끝없는 가능성을 펼쳐나갈 것입니다."},
+    "ENTP": {"name": "리자몽 (Charizard)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png", "type": "🐉 불꽃 / 비행", "trait": "자신감 뿜뿜, 기발함", "reason": "두뇌 회전이 빠르고 자신감이 넘치며 논리적인 승부를 즐깁니다.<br>당신의 톡톡 튀는 아이디어를 거침없이 실행에 옮길 수 있는 추진력을 더해줍니다."},
+    "ESTJ": {"name": "피죤투 (Pidgeot)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/18.png", "type": "🦅 노말 / 비행", "trait": "책임감, 강한 리더십", "reason": "무리를 이끄는 훌륭한 리더십과 확고한 책임감을 갖추었습니다.<br>정해진 목표를 향해 당신과 함께 흔들림 없이 직진하는 최고의 행동 대장입니다."},
+    "ESFJ": {"name": "가디 (Growlithe)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/58.png", "type": "🐶 불꽃", "trait": "충성심 강함, 다정다감", "reason": "주변 사람들을 살뜰히 챙기며 무한한 충성심을 자랑합니다.<br>당신이 힘들 때나 기쁠 때나 곁을 든든하게 지켜주는 다정하고 따뜻한 친구입니다."},
+    "ENFJ": {"name": "망나뇽 (Dragonite)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png", "type": "🐲 드래곤 / 비행", "trait": "부드러운 카리스마", "reason": "다정하고 둥글둥글해 보이지만 내면에는 강력한 카리스마를 품고 있습니다.<br>타인의 성장을 돕고 응원하며 긍정적인 방향으로 이끌어주는 최고의 조력자입니다."},
+    "ENTJ": {"name": "갸라도스 (Gyarados)", "img": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/130.png", "type": "🌊 물 / 비행", "trait": "불도저 같은 추진력", "reason": "원하는 바가 있으면 절대 포기하지 않고 맹렬하게 목표를 향해 돌진합니다.<br>어떤 역경도 부수고 나아가는 결단력이 당신의 야망과 완벽한 시너지를 냅니다."}
+}
+
+
+# ==========================================
+# 3. 세션 상태 관리 (화면 전환용)
+# ==========================================
+if "selected_mbti" not in st.session_state:
+    st.session_state.selected_mbti = None
+if "show_balloons" not in st.session_state:
+    st.session_state.show_balloons = False
+
+def set_mbti(mbti):
+    st.session_state.selected_mbti = mbti
+    st.session_state.show_balloons = True
+
+def reset():
+    st.session_state.selected_mbti = None
+    st.session_state.show_balloons = False
+
+
+# ==========================================
+# 4. 화면 UI 구성
+# ==========================================
+
+# 헤더
+st.markdown("<p class='main-title'>MBTI 단짝 포켓몬 찾기 🔍</p>", unsafe_allow_html=True)
+
+# 화면 분기: MBTI를 아직 안 골랐을 때 (선택 화면)
+if st.session_state.selected_mbti is None:
+    st.markdown("<p class='sub-title'>나의 MBTI 유형을 선택해보세요!</p>", unsafe_allow_html=True)
+    
+    mbti_list = list(pokemon_data.keys())
+    
+    # 4개씩 4줄로 버튼 배치
+    for i in range(0, 16, 4):
+        cols = st.columns(4)
+        for j in range(4):
+            mbti_type = mbti_list[i+j]
+            # 버튼 클릭 시 set_mbti 함수 실행
+            if cols[j].button(mbti_type):
+                set_mbti(mbti_type)
+                st.rerun()
+
+# 화면 분기: MBTI를 골랐을 때 (결과 화면)
+else:
+    # 축하 풍선 효과 (선택 직후 1회만 실행)
+    if st.session_state.show_balloons:
+        st.balloons()
+        st.session_state.show_balloons = False
+        
+    mbti = st.session_state.selected_mbti
+    data = pokemon_data[mbti]
+    
+    st.markdown(f"<p class='sub-title'>당신의 MBTI <b>[ {mbti} ]</b> 와 어울리는 단짝 포켓몬은?</p>", unsafe_allow_html=True)
+    
+    # 이미지 중앙 정렬 표시
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image(data["img"], use_container_width=True)
+        
+    # 포켓몬 상세 정보 표시
+    st.markdown(f"<div class='poke-name'>{data['name']}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='poke-info'><b>타입:</b> {data['type']} &nbsp;|&nbsp; <b>특징:</b> {data['trait']}</div>", unsafe_allow_html=True)
+    
+    # 어울리는 이유 박스
+    st.markdown(f"<div class='reason-box'>✨ <b>어울리는 이유:</b><br>{data['reason']}</div>", unsafe_allow_html=True)
+    
+    # 다시 고르기 버튼
+    st.write("")
+    _, btn_col, _ = st.columns([1, 1, 1])
+    with btn_col:
+        if st.button("🔄 다시 고르기"):
+            reset()
+            st.rerun()
